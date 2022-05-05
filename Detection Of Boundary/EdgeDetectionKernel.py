@@ -23,7 +23,7 @@ import cv2
 clock = TicToc()
 
 fdir = r"./../Image"
-fname = r"ImageOfTesting002.bmp"
+fname = r"ImageOfTesting004.bmp"
 #fpath = fdir + "\\" + fname
 
 Kernel_Prewitt_H = np.array(
@@ -36,6 +36,18 @@ Kernel_Prewitt_V = np.array(
     [[-1, -1, -1],
     [0, 0, 0],
     [1, 1, 1]]
+)
+
+Kernel_Sobel_H = np.array(
+    [[-1, 0, 1],
+    [-2, 0, 2],
+    [-1, 0, 1]]
+)
+
+Kernel_Sobel_V = np.array(
+    [[-1, -2, -1],
+    [0, 0, 0],
+    [1, 2, 1]]
 )
 
 # ================================================== #
@@ -142,6 +154,7 @@ if (__name__ == "__main__"):
     # Image Inputting Using OpenCV
     imgin_cv = cv2.imread(fdir + "\\" + fname) #cv2.fromarray(imgin)
     
+    (VU, VD, HL, HR) = (0, 0, 0, 0)
     if (VD):
         imgin_cv = imgin_cv[VU:VD, HL:HR, :].copy()
     
@@ -150,24 +163,27 @@ if (__name__ == "__main__"):
     # BiLinear Image Up Scaling Using OpenCV
     Ratio = 2
     imgout_cv = cv2.resize(imgin_cv, dsize=(nhi*Ratio, nvi*Ratio), interpolation=cv2.INTER_LINEAR)
-    img.imsave(r"D:\ImageScaling_CV_{}x.bmp".format(Ratio), imgout_cv.astype(np.uint8))
+    img.imsave(r"D:\ImageScaling_CV_{}x.bmp".format(Ratio), imgout_cv[:, :, [2, 1, 0]].astype(np.uint8))
     (nvo, nho, nco) = imgout_cv.shape
     
     # Canny Using OpenCV
     Thres1 = 64
     Thres2 = 192
     
-    imgedge_cv_canny_H = cv2.Canny(imgout_cv, Thres1, Thres2)
-    imgedge_cv_canny_H = np.array(imgedge_cv_canny_H)
-    img.imsave(r"D:\ImageEdge_CV_Canny_H_{:03}_{:03}.bmp".format(Thres1, Thres2), imgedge_cv_canny_H.astype(np.uint8), cmap="gray")
+    imgedge_cv_canny_H = np.zeros(imgout_cv.shape, dtype=np.uint8)
+    for k in np.arange(nco):
+        imgedge_cv_canny_H[:, :, k] = cv2.Canny(imgout_cv[:, :, :], Thres1, Thres2)
+    #img.imsave(r"D:\ImageEdge_CV_Canny_H_{:03}_{:03}.bmp".format(Thres1, Thres2), imgedge_cv_canny_H, cmap="gray")
+    img.imsave(r"D:\ImageEdge_CV_Canny_H_{:03}_{:03}.bmp".format(Thres1, Thres2), imgedge_cv_canny_H)
     
     #imgedge_cv_canny_L = cv2.resize(imgedge_cv_canny_H, dsize=(nvi, nhi), interpolation=cv2.INTER_NEAREST)
-    imgedge_cv_canny_L = np.zeros((nvi, nhi), dtype=np.uint8)
+    imgedge_cv_canny_L = np.zeros((nvi, nhi, nci), dtype=np.uint8)
     
     for i in np.arange(nvi):
         for j in np.arange(nhi):
-            if (np.sum(imgedge_cv_canny_H[2*i:2*i+2, 2*j:2*j+2])):
-                imgedge_cv_canny_L[i, j] = 255
+            for k in np.arange(nci):
+                if (np.sum(imgedge_cv_canny_H[2*i:2*i+2, 2*j:2*j+2, k])):
+                    imgedge_cv_canny_L[i, j, k] = 255
     
     img.imsave(r"D:\ImageEdge_CV_Canny_L.bmp", imgedge_cv_canny_L.astype(np.uint8), cmap="gray")
     
@@ -179,19 +195,25 @@ if (__name__ == "__main__"):
     clock.tic()
     for i in np.arange(1, nvo-1, 1):
         for j in np.arange(1, nho-1, 1):
-            # Edge Pixel
-            if (imgedge_cv_canny_H[i, j]):
-                imgout[i, j, :] = imgin_cv[int(i/2), int(j/2), :]
-                Statistics[0, 0] += 1
-                continue
+            ## Edge Pixel
+            #if (imgedge_cv_canny_H[i, j]):
+            #    imgout[i, j, :] = imgin_cv[int(i/2), int(j/2), :]
+            #    Statistics[0, 0] += 1
+            #    continue
             
             # Non Edge Pixel
             #print("i=", i, ", j=", j)
             for k in np.arange(nco):
+                # Edge Pixel
+                if (imgedge_cv_canny_H[i, j, k]):
+                    imgout[i, j, k] = imgin_cv[int(i/2), int(j/2), k]
+                    Statistics[0, 0] += 1
+                    continue
+                
                 if ((i%2) == 0):
                     if ((j%2) == 0):
                         #print("1")
-                        tmpedge = imgedge_cv_canny_L[int(i/2)-1:int(i/2)+1, int(j/2)-1:int(j/2)+1]
+                        tmpedge = imgedge_cv_canny_L[int(i/2)-1:int(i/2)+1, int(j/2)-1:int(j/2)+1, k]
                         tmpin = imgin_cv[int(i/2)-1:int(i/2)+1, int(j/2)-1:int(j/2)+1, k].copy().astype(np.float64)
                         #print("tmpedge=", tmpedge)
                         #print("tmpin=", tmpin)
@@ -220,7 +242,7 @@ if (__name__ == "__main__"):
                         Statistics[1, 0] += 1
                     if ((j%2) == 1):
                         #print(2)
-                        tmpedge = imgedge_cv_canny_L[int(i/2)-1:int(i/2)+1, int(j/2):int(j/2)+2]
+                        tmpedge = imgedge_cv_canny_L[int(i/2)-1:int(i/2)+1, int(j/2):int(j/2)+2, k]
                         tmpin = imgin_cv[int(i/2)-1:int(i/2)+1, int(j/2):int(j/2)+2, k].copy().astype(np.float64)
                         #print("tmpedge=", tmpedge)
                         #print("tmpin=", tmpin)
@@ -250,7 +272,7 @@ if (__name__ == "__main__"):
                 if ((i%2) == 1):
                     if ((j%2) == 0):
                         #print(3)
-                        tmpedge = imgedge_cv_canny_L[int(i/2):int(i/2)+2, int(j/2)-1:int(j/2)+1]
+                        tmpedge = imgedge_cv_canny_L[int(i/2):int(i/2)+2, int(j/2)-1:int(j/2)+1, k]
                         tmpin = imgin_cv[int(i/2):int(i/2)+2, int(j/2)-1:int(j/2)+1, k].copy().astype(np.float64)
                         #print("tmpedge=", tmpedge)
                         #print("tmpin=", tmpin)
@@ -279,7 +301,7 @@ if (__name__ == "__main__"):
                         Statistics[3, 0] += 1
                     if ((j%2) == 1):
                         #print(4)
-                        tmpedge = imgedge_cv_canny_L[int(i/2):int(i/2)+2, int(j/2):int(j/2)+2]
+                        tmpedge = imgedge_cv_canny_L[int(i/2):int(i/2)+2, int(j/2):int(j/2)+2, k]
                         tmpin = imgin_cv[int(i/2):int(i/2)+2, int(j/2):int(j/2)+2, k].copy().astype(np.float64)
                         #print("tmpedge=", tmpedge)
                         #print("tmpin=", tmpin)
