@@ -11,7 +11,11 @@ Ratio = 2
 
 GradientThreshold = 16
 
-imgin = img.imread(r"..\Image\ImageOfTesting004.bmp")
+imgin = img.imread(r"..\Image\ImageOfTesting002.bmp")
+#imgin = np.zeros((3, 4, 3), dtype=np.uint8)
+#imgin[:, :, 1] = np.array([[128, 160, 255, 255], [128, 128, 192, 255], [128, 128, 160, 255]])
+#imgin[:, :, 0] = imgin[:, :, 1].copy()
+#imgin[:, :, 2] = imgin[:, :, 1].copy()
 (nvi, nhi, nci) = imgin.shape
 
 imgin_edge = np.zeros(imgin.shape, dtype=np.uint8)
@@ -66,6 +70,7 @@ for i in np.arange(nvo):
                 D5 = np.abs(S2 - S4)
                 D6 = np.abs(S3 - S4)
                 D = (D1, D2, D3, D4, D5, D6)
+                Gradient = np.abs((3*(S1+S3-S2-S4), 3*(S1+S2-S3-S4), 3*(S1+S4-S2-S3), 2*(S1+S3+S4-3*S2), 2*(S2+S3+S4-3*S1), 2*(S1+S2+S4-3*S3), 2*(S1+S2+S3-3*S4)))
                 p = x - jj - 0.5
                 q = y - ii - 0.5
                 
@@ -74,6 +79,13 @@ for i in np.arange(nvo):
                 #    print("(p, q) = ({}, {})".format(p, q))
                 #    exit()
                 
+                #if (np.argmax(Gradient) == 3):
+                #    if ((p > 0.5) and (q < 0.5)):
+                #        imgout[i, j, k] = S2
+                #    elif ((p < 0.5) and (q > 0.5)):
+                #        imgout[i, j, k] = S3
+                #    else:
+                #        imgout[i, j, k] = np.mean((S1, S4))
                 if (        # Vertical Edge
                     (np.min(D) == D2)\
                     and\
@@ -131,9 +143,9 @@ for i in np.arange(nvo):
                     and\
                     ((D1 > GradientThreshold) or (D6 > GradientThreshold))\
                 ):
-                    if ((0.5*p + 0.5*q - 0.25) < 0):      # Near Left Top Corner
+                    if ((0.5*p + 0.5*q - 0.25) <= 0):      # Near Left Top Corner
                         imgout[i, j, k] = S1
-                    elif ((1.5*p + 1.5*q - 2.25) > 0):    # Near Right Bottom Corner
+                    elif ((1.5*p + 1.5*q - 2.25) >= 0):    # Near Right Bottom Corner
                         imgout[i, j, k] = S4
                     else:       # On Edge
                         imgout[i, j, k] = 0.5*(p*S2 + (1-p)*S3) + 0.5*((1-q)*S2 + q*S3)
@@ -145,9 +157,9 @@ for i in np.arange(nvo):
                     and\
                     ((D1 > GradientThreshold) or (D6 > GradientThreshold))\
                 ):
-                    if ((-0.5*p + 0.5*q + 0.25) < 0):      # Near Right Top Corner
+                    if ((-0.5*p + 0.5*q + 0.25) <= 0):      # Near Right Top Corner
                         imgout[i, j, k] = S2
-                    elif ((0.5*p - 0.5*q + 0.25) < 0):    # Near Left Bottom Corner
+                    elif ((0.5*p - 0.5*q + 0.25) <= 0):    # Near Left Bottom Corner
                         imgout[i, j, k] = S3
                     else:       # On Edge
                         imgout[i, j, k] = 0.5*(p*S4 + (1-p)*S1) + 0.5*((1-q)*S1 + q*S4)
