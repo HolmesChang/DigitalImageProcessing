@@ -14,6 +14,8 @@ GradientThreshold = 16
 imgin = img.imread(r"..\Image\ImageOfTesting003.bmp")
 (nvi, nhi, nci) = imgin.shape
 
+imgin_edge = np.zeros(imgin.shape, dtype=np.uint8)
+
 imgout_NN = cv2.resize(imgin, (int(nhi*Ratio), int(nvi*Ratio)), interpolation=cv2.INTER_NEAREST)
 img.imsave(r"ImgOut_NN.bmp", imgout_NN)
 
@@ -63,24 +65,43 @@ for i in np.arange(nvo):
                 D4 = np.abs(S2 - S3)
                 D5 = np.abs(S2 - S4)
                 D6 = np.abs(S3 - S4)
+                D = (D1, D2, D3, D4, D5, D6)
                 p = x - jj - 0.5
                 q = y - ii - 0.5
+                
+                # Debugging
                 #if (j == 1):
                 #    print("(p, q) = ({}, {})".format(p, q))
                 #    exit()
+                
                 if (        # Vertical Edge
-                    ((np.min([D1, D2, D3, D4, D5, D6]) == D2) or (np.min([D1, D2, D3, D4, D5, D6]) == D5))\
+                    (np.min(D) == D2)\
                     and\
                     (D1 > GradientThreshold)\
                     and\
-                    (D5 > GradientThreshold)\
+                    (D6 > GradientThreshold)\
                 ):
                     if (p < 0.5):
                         imgout[i, j, k] = (1-q)*S1 + q*S3
                     else:
                         imgout[i, j, k] = (1-q)*S2 + q*S4
+                    
+                    imgin_edge[ii:(ii+2), jj, k] = 32
+                elif (      # Vertical Edge
+                    (np.min(D) == D5)\
+                    and\
+                    (D1 > GradientThreshold)\
+                    and\
+                    (D6 > GradientThreshold)\
+                ):
+                    if (p < 0.5):
+                        imgout[i, j, k] = (1-q)*S1 + q*S3
+                    else:
+                        imgout[i, j, k] = (1-q)*S2 + q*S4
+                    
+                    imgin_edge[ii:(ii+2), jj+1, k] = 32
                 elif (      # Horizontal Edge
-                    ((np.min([D1, D2, D3, D4, D5, D6]) == D1) or (np.min([D1, D2, D3, D4, D5, D6]) == D6))\
+                    (np.min(D) == D1)\
                     and\
                     (D3 > GradientThreshold)\
                     and\
@@ -90,8 +111,23 @@ for i in np.arange(nvo):
                         imgout[i, j, k] = (1-p)*S1 + p*S2
                     else:
                         imgout[i, j, k] = (1-p)*S3 + p*S4
+                    
+                    imgin_edge[ii, jj:(jj+2), k] = 64
+                elif (      # Horizontal Edge
+                    (np.min(D) == D6)\
+                    and\
+                    (D3 > GradientThreshold)\
+                    and\
+                    (D4 > GradientThreshold)\
+                ):
+                    if (q < 0.5):
+                        imgout[i, j, k] = (1-p)*S1 + p*S2
+                    else:
+                        imgout[i, j, k] = (1-p)*S3 + p*S4
+                    
+                    imgin_edge[ii+1, jj:(jj+2), k] = 64
                 elif (      # SW-NE Edge
-                    (np.min([D1, D2, D3, D4, D5, D6]) == D3)\
+                    (np.min(D) == D4)\
                     and\
                     ((D1 > GradientThreshold) or (D6 > GradientThreshold))\
                 ):
@@ -101,8 +137,11 @@ for i in np.arange(nvo):
                         imgout[i, j, k] = S4
                     else:       # On Edge
                         imgout[i, j, k] = 0.5*(p*S2 + (1-p)*S3) + 0.5*((1-q)*S2 + q*S3)
+                        
+                        imgin_edge[ii, jj+1, k] = 192
+                        imgin_edge[ii+1, jj, k] = 192
                 elif (      # NW-SE Edge
-                    (np.min([D1, D2, D3, D4, D5, D6]) == D4)\
+                    (np.min(D) == D3)\
                     and\
                     ((D1 > GradientThreshold) or (D6 > GradientThreshold))\
                 ):
@@ -112,11 +151,25 @@ for i in np.arange(nvo):
                         imgout[i, j, k] = S3
                     else:       # On Edge
                         imgout[i, j, k] = 0.5*(p*S4 + (1-p)*S1) + 0.5*((1-q)*S1 + q*S4)
+                        
+                        imgin_edge[ii, jj, k] = 224
+                        imgin_edge[ii+1, jj+1, k] = 224
                 else:
                     imgout[i, j, k] = (1-p)*(1-q)*S1 + S2*p*(1-q) + S3*(1-p)*q + S4*p*q
+                
+                # Debuggin
+                #if ((ii, jj) == (12, 11)):
+                #    print("(i, j) = ({}, {})".format(i, j))
+                #    print("2x2 Pixel")
+                #    print(imgin[ii:ii+2, jj:jj+2, k])
+                #    print(((S1, S2), (S3, S4)))
+                #    print("D = ", D)
+                #    print("This Pixel In ImgIn_Edge = ", imgin_edge[ii:ii+2, jj:jj+2, k])
+                #    print("This Pixel In ImgOut = ", imgout[i, j, k])
                 
                 #imgout[i, j, k] = (1-p)*(1-q)*S1 + S2*p*(1-q) + S3*(1-p)*q + S4*p*q
 
 img.imsave(r"ImgOut_2x2.bmp", imgout)
+img.imsave(r"ImgIn_Edge.bmp", imgin_edge)
 
 clock.toc()
