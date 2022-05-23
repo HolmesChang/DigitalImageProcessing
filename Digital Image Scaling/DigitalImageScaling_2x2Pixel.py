@@ -11,7 +11,7 @@ Ratio = 2
 
 GradientThreshold = 16
 
-imgin = img.imread(r"..\Image\ImageOfTesting004.bmp")
+imgin = img.imread(r"..\Image\ImageOfTesting003.bmp")
 (nvi, nhi, nci) = imgin.shape
 
 imgin_edge = np.zeros(imgin.shape, dtype=np.uint8)
