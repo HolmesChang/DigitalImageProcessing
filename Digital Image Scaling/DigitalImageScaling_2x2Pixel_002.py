@@ -7,11 +7,11 @@ clock = TicToc()
 
 clock.tic()
 
-Ratio = 2
+Ratio = 4/3
 
 GradientThreshold = 16
 
-imgin = img.imread(r"..\Image\ImageOfTesting002.bmp")
+imgin = img.imread(r"..\Image\ImageOfTesting002_720x1280_Output.bmp")
 #imgin = np.zeros((3, 4, 3), dtype=np.uint8)
 #imgin[:, :, 1] = np.array([[128, 160, 255, 255], [128, 128, 192, 255], [128, 128, 160, 255]])
 #imgin[:, :, 0] = imgin[:, :, 1].copy()
